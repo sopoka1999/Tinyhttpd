@@ -1,0 +1,13 @@
+{
+    "files.associations": {
+        "stdint.h": "c",
+        "socket.h": "c",
+        "chrono": "c",
+        "random": "c",
+        "limits": "c",
+        "semaphore": "c",
+        "string.h": "c",
+        "inet.h": "c",
+        "select.h": "c"
+    }
+}
