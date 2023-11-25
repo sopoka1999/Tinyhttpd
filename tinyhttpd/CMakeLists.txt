@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # 源文件
 set(SOURCE_FILES main.cpp ThreadPool.cpp)
-set(SOURCE_FILES2 httpd.cpp)
+set(SOURCE_FILES2 httpd.cpp ThreadPool.cpp)
 
 add_subdirectory(utils)
 

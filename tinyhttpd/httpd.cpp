@@ -101,8 +101,7 @@ void get_method_and_url(char buf[1024],char* method,char* url){
 
 }
 
-void *accept_request(void * args){
-    int client = *(int *)args;  // 先转换为 int*，然后解引用
+void *accept_request(int client){
     char buf[1024];
     char method[255];
     char url[255];
@@ -142,7 +141,7 @@ void *accept_request(void * args){
         query_string = strchr(url, '?');
         if(query_string == NULL){
 
-            sprintf(path, "docs%s", url);
+            sprintf(path, "/home/chenzihao/workspace/Tinyhttpd-master/htdocs%s", url);
 
             if (path[strlen(path) - 1] == '/')
                 strcat(path, "index.html");
@@ -171,7 +170,7 @@ void *accept_request(void * args){
     }else{
         unimplemented(client);
     }
-    accept_request((void*)&client);
+    accept_request(client);
     return nullptr;
 }
 
@@ -339,7 +338,7 @@ int main(){
     struct sockaddr_in client_addr;
     socklen_t  client_addr_len = sizeof(client_addr);
     pthread_t newthread;
-
+    ThreadPool pool(4);
     server_sock = startup(&port);
     printf("httpd running on port %d\n", port);
 
@@ -351,8 +350,8 @@ int main(){
             continue;
         }
         
-        if (pthread_create(&newthread , NULL, accept_request, (void *)&client_sock))
-            perror("pthread_create");
+        pool.enqueue([client_sock](){ accept_request(client_sock); });
+        
     }
     close(server_sock);
     return(0);

@@ -15,8 +15,8 @@ int main() {
     int res = 0;
     auto task1 = pool.enqueue([&](){res = myTask(1);});
     auto task2 = pool.enqueue([&](){res = myTask(3);});
-    task1.get();
-    task2.get();
+    // task1.get();
+    // task2.get();
     // // 使用 lambda 表达式
     // std::future<int> result2 = t.enqueue([](int y) { return y + y; }, 10);
     // t.enqueue(compute);

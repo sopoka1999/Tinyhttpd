@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <sys/select.h>
 #include <iostream>
+#include "ThreadPool.h"
 
 #define ISspace(x) isspace((int)(x))
 

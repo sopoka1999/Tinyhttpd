@@ -8,6 +8,7 @@ set(CMAKE_DEPENDS_LANGUAGES
 
 # The set of dependency files which are needed:
 set(CMAKE_DEPENDS_DEPENDENCY_FILES
+  "/home/chenzihao/workspace/Tinyhttpd-master/tinyhttpd/ThreadPool.cpp" "CMakeFiles/httpd.dir/ThreadPool.cpp.o" "gcc" "CMakeFiles/httpd.dir/ThreadPool.cpp.o.d"
   "/home/chenzihao/workspace/Tinyhttpd-master/tinyhttpd/httpd.cpp" "CMakeFiles/httpd.dir/httpd.cpp.o" "gcc" "CMakeFiles/httpd.dir/httpd.cpp.o.d"
   )
 

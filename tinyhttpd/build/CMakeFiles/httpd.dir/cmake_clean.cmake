@@ -1,4 +1,6 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/httpd.dir/ThreadPool.cpp.o"
+  "CMakeFiles/httpd.dir/ThreadPool.cpp.o.d"
   "CMakeFiles/httpd.dir/httpd.cpp.o"
   "CMakeFiles/httpd.dir/httpd.cpp.o.d"
   "httpd"

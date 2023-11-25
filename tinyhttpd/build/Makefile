@@ -161,6 +161,7 @@ ThreadPool.o: ThreadPool.cpp.o
 # target to build an object file
 ThreadPool.cpp.o:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/ThreadPool.cpp.o
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/httpd.dir/build.make CMakeFiles/httpd.dir/ThreadPool.cpp.o
 .PHONY : ThreadPool.cpp.o
 
 ThreadPool.i: ThreadPool.cpp.i
@@ -169,6 +170,7 @@ ThreadPool.i: ThreadPool.cpp.i
 # target to preprocess a source file
 ThreadPool.cpp.i:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/ThreadPool.cpp.i
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/httpd.dir/build.make CMakeFiles/httpd.dir/ThreadPool.cpp.i
 .PHONY : ThreadPool.cpp.i
 
 ThreadPool.s: ThreadPool.cpp.s
@@ -177,6 +179,7 @@ ThreadPool.s: ThreadPool.cpp.s
 # target to generate assembly for a file
 ThreadPool.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/main.dir/build.make CMakeFiles/main.dir/ThreadPool.cpp.s
+	$(MAKE) $(MAKESILENT) -f CMakeFiles/httpd.dir/build.make CMakeFiles/httpd.dir/ThreadPool.cpp.s
 .PHONY : ThreadPool.cpp.s
 
 httpd.o: httpd.cpp.o
