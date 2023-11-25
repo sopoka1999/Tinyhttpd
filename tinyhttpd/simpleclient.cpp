@@ -23,12 +23,12 @@ int main(int argc, char *argv[])
     if (result == -1)
     {
         perror("oops: client1");
-        exit(1);
+        return 0;
     }
     
     write(sockfd, &ch, 1);
     read(sockfd, &ch, 1);
     printf("char from server = %c\n", ch);
     close(sockfd);
-    exit(0);
+    return 0;
 }

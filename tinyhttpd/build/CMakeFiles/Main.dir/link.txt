@@ -1,0 +1,1 @@
+/usr/bin/c++ -rdynamic CMakeFiles/Main.dir/main.cpp.o -o Main  utils/libutils.a 

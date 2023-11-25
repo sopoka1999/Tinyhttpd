@@ -1,39 +1,4 @@
-#include <stdio.h> 
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <netinet/in.h>
-#include <netinet/tcp.h>
-#include <arpa/inet.h>
-#include <unistd.h>
-#include <ctype.h>
-#include <strings.h>
-#include <string.h>
-#include <sys/stat.h>
-#include <pthread.h>
-#include <sys/wait.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <sys/select.h>
-
-#define ISspace(x) isspace((int)(x))
-
-#define SERVER_STRING "Server: jdbhttpd/0.1.0\r\n"
-#define STDIN   0
-#define STDOUT  1
-#define STDERR  2
-#define S_IFMT	0170000
-#define S_IFDIR	0040000
-void not_found(int);
-void bad_request(int);
-void cannot_execute(int);
-void unimplemented(int);
-
-void accept_request(int);
-void error_die(const char *);
-void execute_cgi(int, const char *, const char *, const char *);
-int get_line(int, char *, int);
-void serve_file(int, const char *);
-int startup(unsigned short *);
+#include "httpd.h"
 
 void bad_request(int client){
     char buf[1024];
@@ -126,7 +91,7 @@ void get_method_and_url(char buf[1024],char* method,char* url){
         path += 3;  // 跳过 "://"
         char *slash = strchr(path, '/');  // 查找下一个出现的 "/"
         if (slash != NULL) {
-            sprintf(url,slash);
+            sprintf(url,slash,"");
             printf("slash != NULL %s %s\n\n",slash,url);
         } else {
             url[0] = '/';
@@ -136,7 +101,8 @@ void get_method_and_url(char buf[1024],char* method,char* url){
 
 }
 
-void accept_request(int client){
+void *accept_request(void * args){
+    int client = *(int *)args;  // 先转换为 int*，然后解引用
     char buf[1024];
     char method[255];
     char url[255];
@@ -150,13 +116,13 @@ void accept_request(int client){
     int result;
     FD_ZERO(&readfds);
     FD_SET(client, &readfds);
-    timeout.tv_sec = 10;  // 设置超时为60秒
+    timeout.tv_sec = 10;  // 设置超时为10秒
     timeout.tv_usec = 0;
     result = select(client + 1, &readfds, NULL, NULL, &timeout);
     if (result == 0) {
         printf("超时!\n");
         close(client);
-        return ;
+        return nullptr;
     }
 
     printf("a new client connect, %d\n\n",client);
@@ -185,28 +151,28 @@ void accept_request(int client){
                 not_found(client);
                 printf("没有找到文件 %s\n",path);
                 close(client);
-                return;
+                return nullptr;
             }else if ((st.st_mode & S_IFMT) == S_IFDIR){ //判断是否为目录
                 strcat(path, "/index.html");
                 if (stat(path, &st) == -1) {
                     not_found(client);
                     close(client);
-                    return;
+                    return nullptr;
                 }
             }
             printf("path = %s\n",path);
             serve_file(client, path);
         }else{
             query_string = query_string + 1;
-            printf("%d\n",query_string);
+            printf("%s\n",query_string);
         }
     }else if(strcasecmp(method, "POST") == 0){
         execute_cgi(client, path, method, query_string);
     }else{
         unimplemented(client);
     }
-    accept_request(client);
-    return;
+    accept_request((void*)&client);
+    return nullptr;
 }
 
 
@@ -216,82 +182,7 @@ void error_die(const char *sc){
 }
 
 void execute_cgi(int client, const char *path, const char *method, const char *query_string){
-    char buf[1024];
-    int cgi_output[2];
-    int cgi_input[2];
-    pid_t pid;
-    int status;
-    int i;
-    char c;
-    int numchars = 1;
-    int content_length = -1;
-
-    buf[0] = 'A'; buf[1] = '\0';
-    numchars = get_line(client, buf, sizeof(buf));
-    while ((numchars > 0) && strcmp("\n", buf))
-    {
-        buf[15] = '\0';
-        if (strcasecmp(buf, "Content-Length:") == 0)
-            content_length = atoi(&(buf[16]));
-        numchars = get_line(client, buf, sizeof(buf));
-    }
-    if (content_length == -1) {
-        bad_request(client);
-        return;
-    }
-
-    if (pipe(cgi_output) < 0) {
-        cannot_execute(client);
-        return;
-    }
-    if (pipe(cgi_input) < 0) {
-        cannot_execute(client);
-        return;
-    }
-
-    if ( (pid = fork()) < 0 ) {
-        cannot_execute(client);
-        return;
-    }
-    sprintf(buf, "HTTP/1.0 200 OK\r\n");
-    send(client, buf, strlen(buf), 0);
-    if (pid == 0)  /* child: CGI script */
-    {
-        char meth_env[255];
-        char query_env[255];
-        char length_env[255];
-
-        dup2(cgi_output[1], STDOUT);
-        dup2(cgi_input[0], STDIN);
-        close(cgi_output[0]);
-        close(cgi_input[1]);
-        sprintf(meth_env, "REQUEST_METHOD=%s", method);
-        putenv(meth_env);
-        if (strcasecmp(method, "GET") == 0) {
-            sprintf(query_env, "QUERY_STRING=%s", query_string);
-            putenv(query_env);
-        }
-        else {   /* POST */
-            sprintf(length_env, "CONTENT_LENGTH=%d", content_length);
-            putenv(length_env);
-        }
-        execl(path, NULL);
-        exit(0);
-    } else {    /* parent */
-        close(cgi_output[1]);
-        close(cgi_input[0]);
-        if (strcasecmp(method, "POST") == 0)
-            for (i = 0; i < content_length; i++) {
-                recv(client, &c, 1, 0);
-                write(cgi_input[1], &c, 1);
-            }
-        while (read(cgi_output[0], &c, 1) > 0)
-            send(client, &c, 1, 0);
-
-        close(cgi_output[0]);
-        close(cgi_input[1]);
-        waitpid(pid, &status, 0);
-    }
+    
 }
 
 
@@ -332,7 +223,7 @@ long getFileSize(FILE *file) {
     fseek(file, 0, SEEK_END); // 将文件指针移到文件末尾
     size = ftell(file); // 获取文件指针的位置，即文件大小
     fseek(file, 0, SEEK_SET); // 将文件指针重置回文件开头
-    printf("size = %d\n",size);
+    printf("size = %ld\n",size);
     return size;
 }
 
@@ -343,7 +234,7 @@ void serve_file(int client, const char* filename){
     }else{
         char buf[1024];
         char Content_Type[128];
-        char* filename_suffix = strchr(filename, '.');
+        const char* filename_suffix = strchr(filename, '.');
 
         if(filename_suffix == NULL){
             sprintf(Content_Type, "application/octet-stream");
@@ -386,7 +277,7 @@ void serve_file(int client, const char* filename){
         send(client, buf, strlen(buf), 0);
         sprintf(buf, "Connection: keep-alive\r\n");
         send(client, buf, strlen(buf), 0);
-        sprintf(buf, "Content-Length: %d\r\n",getFileSize(resource));
+        sprintf(buf, "Content-Length: %ld\r\n",getFileSize(resource));
         send(client, buf, strlen(buf), 0);
         sprintf(buf, "Keep-Alive: timeout=60, max=100\r\n");
         send(client, buf, strlen(buf), 0);
@@ -400,7 +291,7 @@ void serve_file(int client, const char* filename){
             send(client, buf, bytes, 0);
             // fwrite(buf, sizeof(char), bytes, stdout);
         }
-        printf("total_bytes = %d\n",total_bytes);
+        printf("total_bytes = %ld\n",total_bytes);
         fclose(resource);
     }
 }
@@ -460,7 +351,7 @@ int main(){
             continue;
         }
         
-        if (pthread_create(&newthread , NULL, (void *)accept_request, client_sock) != 0)
+        if (pthread_create(&newthread , NULL, accept_request, (void *)&client_sock))
             perror("pthread_create");
     }
     close(server_sock);
